@@ -1,18 +1,18 @@
-import os
-from datetime import datetime, timedelta
-from typing import Optional
-
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+import logging
+from typing import Optional
+from datetime import datetime, timedelta
 
 # Database setup
-DATABASE_URL = os.getenv("AUTH_DB_URL", "sqlite:///./auth.db")
+DATABASE_URL = "sqlite:///./auth.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
@@ -29,7 +29,7 @@ class User(Base):
 Base.metadata.create_all(bind=engine)
 
 # Auth config
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
+SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -37,6 +37,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Models
 class UserCreate(BaseModel):
@@ -82,15 +91,23 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 # Routes
 @app.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
+    print(f"Received registration request: {user}")  # Debugging
+
+    # Ensure JSON request body is parsed correctly
+    if not user.email or not user.password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+
     db_user = get_user(db, user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     hashed_password = get_password_hash(user.password)
     new_user = User(email=user.email, hashed_password=hashed_password)
     db.add(new_user)
     db.commit()
+
     return {"message": "User created successfully"}
+
 
 @app.post("/token", response_model=Token)
 async def login(
@@ -137,4 +154,3 @@ async def get_current_user(
 @app.get("/users/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
-
