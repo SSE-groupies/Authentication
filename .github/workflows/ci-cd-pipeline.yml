@@ -48,7 +48,7 @@ jobs:
             --name auth-service \
             --image ghcr.io/sse-groupies/authentication:latest \
             --ports 5001 \
-            --dns-name-label sse-auth-service-2 \ # If we keep changing this, can add a date and time variable instead of -2
+            --dns-name-label sse-auth-service-2 \
             --os-type Linux \
             --cpu 1 \
             --memory 1
