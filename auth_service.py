@@ -3,14 +3,14 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy.orm import sessionmaker, Session
 import logging
 from typing import Optional
-from datetime import datetime, timedelta, UTC
 from email_validator import validate_email, EmailNotValidError
+from datetime import datetime, timedelta, UTC
 
 # Database setup
 DATABASE_URL = "sqlite:///./auth.db"
@@ -50,8 +50,23 @@ app.add_middleware(
 
 # Models
 class UserCreate(BaseModel):
-    email: EmailStr  # This will automatically validate email format
-    password: constr(min_length=6)  # Requires password to be at least 6 characters
+    email: str  
+    password: str  # Requires password to be at least 6 characters
+
+    # These can be removed if they break things @mark 
+    @field_validator("email")
+    def validate_email(cls, v):
+        try:
+            validate_email(v)
+        except EmailNotValidError as e:
+            raise ValueError(str(e))
+        return v
+
+    @field_validator("password")
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return v
 
 class Token(BaseModel):
     access_token: str
