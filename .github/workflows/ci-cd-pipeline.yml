@@ -40,6 +40,12 @@ jobs:
           docker build -t ghcr.io/sse-groupies/authentication:latest .
           docker push ghcr.io/sse-groupies/authentication:latest
 
+      # Log in to Azure
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       # Deploy to Azure
       - name: Deploy to Azure
         run: |
