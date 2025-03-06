@@ -12,6 +12,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write # Needed for us to push to GHCR
+
     steps:
       # Check out the repository
       - name: Checkout code
