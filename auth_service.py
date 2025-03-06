@@ -3,13 +3,14 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, constr
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 import logging
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
+from email_validator import validate_email, EmailNotValidError
 
 # Database setup
 DATABASE_URL = "sqlite:///./auth.db"
@@ -49,8 +50,8 @@ app.add_middleware(
 
 # Models
 class UserCreate(BaseModel):
-    email: str
-    password: str
+    email: EmailStr  # This will automatically validate email format
+    password: constr(min_length=6)  # Requires password to be at least 6 characters
 
 class Token(BaseModel):
     access_token: str
@@ -84,7 +85,7 @@ def authenticate_user(db, email: str, password: str):
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
