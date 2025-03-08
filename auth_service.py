@@ -1,3 +1,4 @@
+# auth_service
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +31,7 @@ class User(Base):
 Base.metadata.create_all(bind=engine)
 
 # Auth config
-SECRET_KEY = "your-secret-key"
+SECRET_KEY = "your-secret-key" # TODO CHANGE!!!
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -125,12 +126,13 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     return {"message": "User created successfully"}
 
 
-@app.post("/token", response_model=Token)
+@app.post("/token")
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
+    
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -142,7 +144,7 @@ async def login(
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id}
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
