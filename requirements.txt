@@ -2,7 +2,10 @@ python-jose==3.3.0
 PyJWT==2.3.0
 python-multipart==0.0.20
 uvicorn==0.25.0
-fastapi==0.115.8
+fastapi>=0.115.0
 passlib==1.7.4
 sqlalchemy==2.0.38
 bcrypt==4.1.2
+pytest==7.3.1
+httpx==0.24.0
+pydantic>=2.0.0
