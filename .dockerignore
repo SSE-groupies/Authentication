@@ -1,0 +1,14 @@
+# Ignore GitHub-specific files
+.github/
+
+# Ignore Git-related files
+.gitignore
+
+# Ignore test files
+test_auth_service.py
+pytest.ini
+
+# Ignore IDE and system-specific files
+.DS_Store
+.idea/
+.vscode/
