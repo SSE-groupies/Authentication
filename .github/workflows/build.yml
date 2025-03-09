@@ -1,0 +1,63 @@
+name: Deploy to Azure Container App
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write  # ✅ Required for Azure OIDC authentication
+  contents: read   # (Optional) Needed for repo checkout
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+      - name: Build and tag Docker image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ secrets.GHCR_USERNAME }}/python-interface:latest
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+
+  deploy-to-azure:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
+          APP_NAME="${{ secrets.AZURE_CONTAINER_APP_NAME }}"
+          LOCATION="${{ secrets.AZURE_LOCATION }}"
+          IMAGE_NAME="ghcr.io/${{ secrets.GHCR_USERNAME }}/python-interface:latest"
+
+          az containerapp create \
+            --name $APP_NAME \
+            --resource-group $RG \
+            --image $IMAGE_NAME \
+            --environment $RG-env \
+            --target-port 7999 \
+            --ingress external \
+            --registry-server ghcr.io \
+            --registry-username "${{ secrets.GHCR_USERNAME }}" \
+            --registry-password "${{ secrets.GHCR_TOKEN }}" \
+            --location $LOCATION || \
+          az containerapp update \
+            --name $APP_NAME \
+            --resource-group $RG \
+            --image $IMAGE_NAME
