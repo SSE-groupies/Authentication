@@ -47,9 +47,10 @@ app = FastAPI()
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
+origins = ["*"] # TODO CHANGE
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://frontend.delightfulwater-b24a63e0.uksouth.azurecontainerapps.io"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,7 +64,7 @@ class UserCreate(BaseModel):
     # These can be removed if they break things @mark 
     @field_validator("email")
     def validate_email(cls, v):
-        if len(v) > 10:
+        if len(v) > 20: # TODO CHANGE THIS!!!!
             raise ValueError("Username must be less than 10 characters long")
         return v
 
