@@ -1,14 +1,33 @@
-# Ignore GitHub-specific files
-.github/
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Ignore Git-related files
+# Ignore virtual environment
+venv/
+
+# Ignore local development files
+auth.db
+pytest.ini
+test_auth_service.py
+
+# Ignore Git and GitHub files
+.git/
+.github/
 .gitignore
 
-# Ignore test files
-test_auth_service.py
-pytest.ini
+# Ignore Docker Compose file for local development
+docker-compose.vm
 
-# Ignore IDE and system-specific files
-.DS_Store
-.idea/
+# Ignore local environment files (if any)
+.env
+*.env
+
+# Ignore IDE-specific files
 .vscode/
+.idea/
+
+# Ignore local logs and temp files
+*.log
+*.tmp
