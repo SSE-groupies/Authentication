@@ -10,7 +10,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import logging
 from typing import Optional
-from email_validator import validate_email, EmailNotValidError
 from datetime import datetime, timedelta, UTC
 
 # Database setup
@@ -57,10 +56,8 @@ class UserCreate(BaseModel):
     # These can be removed if they break things @mark 
     @field_validator("email")
     def validate_email(cls, v):
-        try:
-            validate_email(v)
-        except EmailNotValidError as e:
-            raise ValueError(str(e))
+        if len(v) > 10:
+            raise ValueError("Username must be less than 10 characters long")
         return v
 
     @field_validator("password")

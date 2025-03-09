@@ -51,14 +51,14 @@ def test_client(override_get_db):
 @pytest.fixture
 def test_user():
     """Create a test user"""
-    return {"email": "test@gmail.com", "password": "testpassword"}
+    return {"email": "test", "password": "testpassword"}
 
 # Tests for user registration
 def test_register_user(test_client):
     """Test successful user registration"""
     response = test_client.post(
         "/register",
-        json={"email": "newuser@gmail.com", "password": "newpassword"}
+        json={"email": "newuser", "password": "newpassword"}
     )
     assert response.status_code == 201
     assert response.json() == {"message": "User created successfully"}
@@ -68,14 +68,14 @@ def test_register_duplicate_user(test_client, test_user):
     # First create a user
     first_response = test_client.post(
         "/register",
-        json={"email": "duplicate@gmail.com", "password": "testpassword"}
+        json={"email": "duplicate", "password": "testpassword"}
     )
     assert first_response.status_code == 201
     
     # Then try to register with the same email
     second_response = test_client.post(
         "/register",
-        json={"email": "duplicate@gmail.com", "password": "newpassword"}
+        json={"email": "duplicate", "password": "newpassword"}
     )
     assert second_response.status_code == 400
     assert second_response.json()["detail"] == "Email already registered"
@@ -133,7 +133,7 @@ def test_login_nonexistent_user(test_client):
     """Test login with an email that doesn't exist"""
     response = test_client.post(
         "/token",
-        data={"username": "nonexistent@gmail.com", "password": "password"},
+        data={"username": "nonexistent", "password": "password"},
         headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     assert response.status_code == 401
@@ -244,7 +244,7 @@ async def test_user_verification_flow(test_client, test_user):
     # Create a unique user
     import time
     unique_user = {
-        "email": f"verification_{time.time()}@gmail.com",
+        "email": f"verification_{time.time()}",
         "password": "testpassword123"
     }
     
@@ -286,7 +286,7 @@ def setup_database():
     # Create test user
     hashed_password = get_password_hash("testpassword")
     test_user = User(
-        email="test@gmail.com", 
+        email="test", 
         hashed_password=hashed_password,
         is_active=True
     )
