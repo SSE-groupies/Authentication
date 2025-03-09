@@ -51,7 +51,7 @@ jobs:
             --resource-group $RG \
             --image $IMAGE_NAME \
             --environment $RG-env \
-            --target-port 7999 \
+            --target-port 5001 \
             --ingress external \
             --registry-server ghcr.io \
             --registry-username "${{ secrets.GHCR_USERNAME }}" \
