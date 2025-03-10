@@ -8,10 +8,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all application files (including auth_service.py, auth.db, etc.)
+# Copy all application files
 COPY . .
 
-# Expose the port your app runs on (5001 in your runner script)
+# Expose the port your app runs on
 EXPOSE 5001
 
 # Command to run the application

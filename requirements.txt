@@ -10,3 +10,4 @@ pytest==7.3.1
 httpx==0.24.0
 pydantic>=2.0.0
 email_validator
+azure-data-tables
