@@ -8,6 +8,13 @@ from typing import Optional
 from datetime import datetime, timedelta, UTC
 from azure.data.tables import TableServiceClient, TableClient
 import os
+import logging
+
+# -------------------------------
+# Logging Setup
+# -------------------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # -------------------------------
 # Azure Table Storage Setup
@@ -15,19 +22,29 @@ import os
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 TABLE_NAME = "Users"
 
-table_service = TableServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-user_table = table_service.get_table_client(TABLE_NAME)
+if not AZURE_STORAGE_CONNECTION_STRING:
+    logger.error("AZURE_STORAGE_CONNECTION_STRING is not set. Check your environment variables.")
+    raise RuntimeError("AZURE_STORAGE_CONNECTION_STRING is required but not set.")
 
-# Ensure table exists
 try:
-    table_service.create_table(TABLE_NAME)
-except Exception:
-    pass
+    table_service = TableServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+    user_table = table_service.get_table_client(TABLE_NAME)
+    logger.info("Successfully connected to Azure Table Storage.")
+
+    # Ensure the table exists
+    try:
+        table_service.create_table(TABLE_NAME)
+        logger.info(f"Table '{TABLE_NAME}' created.")
+    except Exception:
+        logger.info(f"Table '{TABLE_NAME}' already exists.")
+except Exception as e:
+    logger.error(f"Failed to connect to Azure Table Storage: {str(e)}")
+    raise RuntimeError(f"Error initializing Azure Table Storage: {str(e)}")
 
 # -------------------------------
 # Authentication Configuration
 # -------------------------------
-SECRET_KEY = "your-secret-key"  # TODO: Change this to a secure value
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")  # TODO: Change this
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -40,7 +57,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI()
 
 # Configure CORS (update this in production)
-origins = ["*"] # TODO CHANGE THIS!
+origins = ["*"]  # TODO: Restrict this in production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -58,7 +75,7 @@ class UserCreate(BaseModel):
 
     @field_validator("email")
     def validate_email(cls, v):
-        if len(v) > 20:  # Adjust email length limit
+        if len(v) > 50:
             raise ValueError("Email must be less than 50 characters")
         return v
 
@@ -91,10 +108,12 @@ def get_user(email: str):
     """Retrieve a user from Azure Table Storage by email."""
     try:
         entity = user_table.get_entity(partition_key="Users", row_key=email)
+        logger.info(f"User found: {email}")
         return User(email=entity["email"], hashed_password=entity["hashed_password"],
                     is_active=entity["is_active"], is_verified=entity["is_verified"])
-    except:
-        return None  # User not found
+    except Exception as e:
+        logger.warning(f"User '{email}' not found or error fetching user: {str(e)}")
+        return None
 
 def verify_password(plain_password, hashed_password):
     """Verify the password against the stored hash."""
@@ -124,22 +143,29 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 @app.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate):
     """Register a new user and store in Azure Table Storage."""
+    logger.info(f"Received registration request for email: {user.email}")
+
     if get_user(user.email):
+        logger.warning(f"Registration failed: Email {user.email} already exists.")
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = get_password_hash(user.password)
     new_user = User(email=user.email, hashed_password=hashed_password)
 
-    # Insert into Azure Table Storage
-    user_table.upsert_entity(vars(new_user))
-
-    return {"message": "User created successfully"}
+    try:
+        user_table.upsert_entity(vars(new_user))
+        logger.info(f"User {user.email} registered successfully.")
+        return {"message": "User created successfully"}
+    except Exception as e:
+        logger.error(f"Error saving user '{user.email}': {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to register user")
 
 @app.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """Authenticate user and return a JWT token."""
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
+        logger.warning(f"Login failed for {form_data.username}: Incorrect credentials.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -150,6 +176,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
+    logger.info(f"User {user.email} logged in successfully.")
     return {"access_token": access_token, "token_type": "bearer", "user_id": user.email}
 
 async def get_current_user(
