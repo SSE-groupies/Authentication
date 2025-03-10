@@ -11,6 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all application files
 COPY . .
 
+# Print environment variables for debugging
+RUN echo "📢 ENV VARS:" && env
+
 # Expose the port your app runs on
 EXPOSE 5001
 
