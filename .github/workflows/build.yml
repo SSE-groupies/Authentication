@@ -44,7 +44,7 @@ jobs:
           RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
           APP_NAME="${{ secrets.AZURE_CONTAINER_APP_NAME }}"
           LOCATION="${{ secrets.AZURE_LOCATION }}"
-          IMAGE_NAME="ghcr.io/sse-groupies/authentication:latest
+          IMAGE_NAME="ghcr.io/sse-groupies/authentication:latest"
           echo "APP_NAME: '$APP_NAME'"
           echo "RESOURCE_GROUP: '$RG'"
           echo "LOCATION: '$LOCATION'"
